@@ -48,13 +48,21 @@ def main():
     parser.add_argument("--attributes", "-a", default="Password")
     parser.add_argument("--no-password", action="store_true")
     parser.add_argument("--key-file", "-k", default=None)
-    parser.add_argument("--yubikey", default=None)          # unsupported, accepted silently
+    parser.add_argument("--yubikey", default=None)
     parser.add_argument("database")
     parser.add_argument("entry")
     args = parser.parse_args()
 
     if args.command != "show":
         print(f"Unsupported command: {args.command}", file=sys.stderr)
+        sys.exit(1)
+
+    if args.yubikey is not None:
+        print("Unsupported: --yubikey (hardware tokens are not supported)", file=sys.stderr)
+        sys.exit(1)
+
+    if args.attributes != "Password":
+        print(f"Unsupported attribute: {args.attributes} (only 'Password' is supported)", file=sys.stderr)
         sys.exit(1)
 
     password = None if args.no_password else input("Enter password to unlock database: ")
@@ -79,28 +87,11 @@ def main():
         print(f"Error: entry '{args.entry}' not found in database", file=sys.stderr)
         sys.exit(1)
 
-    attr = args.attributes
-    value = None
-
-    if attr == "Password":
-        value = entries.password
-    elif attr == "UserName":
-        value = entries.username
-    elif attr == "URL":
-        value = entries.url
-    elif attr == "Notes":
-        value = entries.notes
-    elif attr == "Title":
-        value = entries.title
-    else:
-        # Custom attribute
-        value = entries.custom_properties.get(attr)
-
-    if value is None:
-        print(f"Error: attribute '{attr}' not found on entry '{args.entry}'", file=sys.stderr)
+    if entries.password is None:
+        print(f"Error: attribute 'Password' not found on entry '{args.entry}'", file=sys.stderr)
         sys.exit(1)
 
-    print(value)
+    print(entries.password)
 
 
 if __name__ == "__main__":
